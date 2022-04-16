@@ -1,5 +1,5 @@
 import '../src/config'
-import Database from '../src/config/database'
+import Database from '../src/database'
 import dbConfig from '../src/config/database'
 
 let db;
