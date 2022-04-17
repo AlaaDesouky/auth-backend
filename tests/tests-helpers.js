@@ -18,6 +18,12 @@ class TestHelpers {
   static async syncDb() {
     await db.sync()
   }
+
+  static getApp() {
+    // To make sure models are populated
+    const App = require('../src/app').default
+    return new App().getApp()
+  }
 }
 
 export default TestHelpers
