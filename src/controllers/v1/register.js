@@ -27,10 +27,11 @@ router.post('/register', runAsyncWrapper(async (req, res) => {
     // Create and associate roles
     if (roles && Array.isArray(roles)) {
       const rolesToSave = []
-      roles.forEach(async (role) => {
+      // -- 'for of loop' awaits for an array of promises --
+      for (const role of roles) {
         const newRole = await Role.create({ role })
         rolesToSave.push(newRole)
-      })
+      }
       // -- a mixin provided by sequelize --
       await newUser.addRoles(rolesToSave)
     }
