@@ -14,6 +14,11 @@ export function registerModels(sequelize) {
   }
 
   // Register associations of the models
+  Object.keys(models).forEach((modelName) => {
+    if (models[modelName].associate) {
+      models[modelName].associate(models)
+    }
+  })
 
   models.sequelize = sequelize
 }
