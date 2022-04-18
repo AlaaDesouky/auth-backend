@@ -26,12 +26,12 @@ router.post('/login', runAsyncWrapper(async (req, res) => {
 
       if (!savedRefreshToken) {
         await user.createRefreshToken({ token: refreshToken })
-      } else if (!savedRefreshToken.token) {
+      } else {
         user.RefreshToken.token = refreshToken
         await user.RefreshToken.save()
-      } else {
-        refreshToken = savedRefreshToken.token
       }
+    } else {
+      refreshToken = savedRefreshToken.token
     }
 
     return res.status(200).send({ success: true, message: 'Successfully logged in', data: { accessToken, refreshToken } })
