@@ -13,3 +13,5 @@ router.post('/logout', requiresAuth(), runAsyncWrapper(async (req, res) => {
   user.RefreshToken.save()
   return res.status(200).send({ success: true, message: 'Successfully logged out' })
 }))
+
+export default router
