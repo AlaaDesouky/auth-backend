@@ -35,3 +35,5 @@ function requireAuth(tokenType = 'accessToken') {
     }
   }
 }
+
+export default requireAuth;
