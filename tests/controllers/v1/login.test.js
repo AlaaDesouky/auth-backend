@@ -2,7 +2,7 @@ import request from 'supertest'
 import models from '../../../src/models'
 import TestHelpers from '../../tests-helpers'
 
-describe('register', () => {
+describe('login', () => {
   let app;
   let newUserResponse;
 
@@ -12,7 +12,7 @@ describe('register', () => {
   })
 
   afterAll(async () => {
-    await TestHelpers.startDb()
+    await TestHelpers.stopDb()
   })
 
   beforeEach(async () => {
