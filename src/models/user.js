@@ -1,12 +1,13 @@
 import { Model, DataTypes } from 'sequelize'
 import bcrypt from 'bcrypt'
 import environment from '../config/environment'
+import JWTUtils from '../utils/jwt-utils'
 
 export default (sequelize) => {
   class User extends Model {
     static associate(models) {
-      User.hasMany(models['Role'])
-      User.hasOne(models['RefreshToken'])
+      User.Roles = User.hasMany(models['Role'])
+      User.RefreshToken = User.hasOne(models['RefreshToken'])
     }
 
     // Password Handling
@@ -16,6 +17,24 @@ export default (sequelize) => {
 
     static async comparePassword(password, hashedPassword) {
       return bcrypt.compare(password, hashedPassword)
+    }
+
+    static async createNewUser({ email, password, roles }) {
+      return sequelize.transaction(async () => {
+        const jwtPayload = { email }
+        const accessToken = JWTUtils.generateAccessToken(jwtPayload)
+        const refreshToken = JWTUtils.generateRefreshToken(jwtPayload)
+
+        let rolesToSave = []
+        if (roles && Array.isArray(roles)) {
+          rolesToSave = roles.map((role) => ({ role }))
+        }
+
+        await User.create({ email, password, Roles: rolesToSave, RefreshToken: { token: refreshToken } },
+          { include: [User.Roles, User.RefreshToken] })
+
+        return { accessToken, refreshToken }
+      })
     }
   }
 
