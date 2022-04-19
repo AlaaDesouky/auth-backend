@@ -4,41 +4,36 @@ import JWTUtils from '../../utils/jwt-utils'
 import runAsyncWrapper from '../../utils/runAsyncWrapper'
 
 const router = Router()
-const { User } = models
+const { User, RefreshToken } = models
 
 router.post('/login', runAsyncWrapper(async (req, res) => {
   const { email, password } = req.body
-  const user = await User.findOne({ where: { email } })
+  const user = await User.findOne({ where: { email }, include: RefreshToken })
 
   if (!user || !(await User.comparePassword(password, user.password))) {
     return res.status(401).send({ success: false, message: 'Invalid credentials' })
   }
 
-  try {
-    const jwtPayload = { email }
-    const accessToken = JWTUtils.generateAccessToken(jwtPayload)
-    const savedRefreshToken = await user.getRefreshToken()
+  const jwtPayload = { email }
+  const accessToken = JWTUtils.generateAccessToken(jwtPayload)
+  const savedRefreshToken = await user.getRefreshToken()
 
-    let refreshToken
+  let refreshToken
 
-    if (!savedRefreshToken || !savedRefreshToken.token) {
-      refreshToken = JWTUtils.generateRefreshToken({ jwtPayload })
+  if (!savedRefreshToken || !savedRefreshToken.token) {
+    refreshToken = JWTUtils.generateRefreshToken({ jwtPayload })
 
-      if (!savedRefreshToken) {
-        await user.createRefreshToken({ token: refreshToken })
-      } else {
-        user.RefreshToken.token = refreshToken
-        await user.RefreshToken.save()
-      }
+    if (!savedRefreshToken) {
+      await user.createRefreshToken({ token: refreshToken })
     } else {
-      refreshToken = savedRefreshToken.token
+      user.RefreshToken.token = refreshToken
+      await user.RefreshToken.save()
     }
-
-    return res.status(200).send({ success: true, message: 'Successfully logged in', data: { accessToken, refreshToken } })
-  } catch (error) {
-    console.log('Error logging the user:\n', error.stack)
-    res.status(500).send({ success: false, message: error.message })
+  } else {
+    refreshToken = savedRefreshToken.token
   }
+
+  return res.status(200).send({ success: true, message: 'Successfully logged in', data: { accessToken, refreshToken } })
 }))
 
 export default router

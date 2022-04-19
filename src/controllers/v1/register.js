@@ -15,44 +15,39 @@ router.post('/register', runAsyncWrapper(async (req, res) => {
   }
 
   // Create new user
-  try {
-    const result = await sequelize.transaction(async () => {
-      const newUser = await User.create({ email, password })
-      // Generate jwt tokens
-      const jwtPayload = { email }
-      const accessToken = JWTUtils.generateAccessToken(jwtPayload)
-      const refreshToken = JWTUtils.generateRefreshToken(jwtPayload)
-      // Create refresh token model, -- a mixin provided by sequelize when two models are associated --
-      await newUser.createRefreshToken({ token: refreshToken })
+  const result = await sequelize.transaction(async () => {
+    const newUser = await User.create({ email, password })
+    // Generate jwt tokens
+    const jwtPayload = { email }
+    const accessToken = JWTUtils.generateAccessToken(jwtPayload)
+    const refreshToken = JWTUtils.generateRefreshToken(jwtPayload)
+    // Create refresh token model, -- a mixin provided by sequelize when two models are associated --
+    await newUser.createRefreshToken({ token: refreshToken })
 
-      // Create and associate roles
-      if (roles && Array.isArray(roles)) {
-        const rolesToSave = []
-        // -- 'for of loop' awaits for an array of promises --
-        for (const role of roles) {
-          const newRole = await Role.create({ role })
-          rolesToSave.push(newRole)
-        }
-        // -- a mixin provided by sequelize --
-        await newUser.addRoles(rolesToSave)
+    // Create and associate roles
+    if (roles && Array.isArray(roles)) {
+      const rolesToSave = []
+      // -- 'for of loop' awaits for an array of promises --
+      for (const role of roles) {
+        const newRole = await Role.create({ role })
+        rolesToSave.push(newRole)
       }
+      // -- a mixin provided by sequelize --
+      await newUser.addRoles(rolesToSave)
+    }
 
-      return { accessToken, refreshToken }
-    })
-    const { accessToken, refreshToken } = result
+    return { accessToken, refreshToken }
+  })
+  const { accessToken, refreshToken } = result
 
-    return res.status(201).send({
-      success: true,
-      message: 'User successfully registered',
-      data: {
-        accessToken,
-        refreshToken
-      }
-    })
-  } catch (error) {
-    console.log('Error registering the user:\n', error.stack)
-    res.status(500).send({ success: false, message: error.message })
-  }
+  return res.status(201).send({
+    success: true,
+    message: 'User successfully registered',
+    data: {
+      accessToken,
+      refreshToken
+    }
+  })
 }))
 
 export default router
