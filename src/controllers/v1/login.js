@@ -8,7 +8,7 @@ const { User, RefreshToken } = models
 
 router.post('/login', runAsyncWrapper(async (req, res) => {
   const { email, password } = req.body
-  const user = await User.findOne({ where: { email }, include: RefreshToken })
+  const user = await User.findOne({ where: { email } })
 
   if (!user || !(await User.comparePassword(password, user.password))) {
     return res.status(401).send({ success: false, message: 'Invalid credentials' })
@@ -26,8 +26,8 @@ router.post('/login', runAsyncWrapper(async (req, res) => {
     if (!savedRefreshToken) {
       await user.createRefreshToken({ token: refreshToken })
     } else {
-      user.RefreshToken.token = refreshToken
-      await user.RefreshToken.save()
+      savedRefreshToken.token = refreshToken
+      await savedRefreshToken.save()
     }
   } else {
     refreshToken = savedRefreshToken.token
