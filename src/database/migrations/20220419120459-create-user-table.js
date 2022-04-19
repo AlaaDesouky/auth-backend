@@ -1,0 +1,66 @@
+'use strict';
+
+module.exports = {
+  async up(queryInterface, Sequelize) {
+    /**
+     * Add altering commands here.
+     *
+     * Example:
+     * await queryInterface.createTable('users', { id: Sequelize.INTEGER });
+     */
+    const transaction = await queryInterface.sequelize.transaction()
+    try {
+      await queryInterface.createTable('Users', {
+        id: {
+          allowNull: false,
+          autoIncrement: true,
+          primaryKey: true,
+          type: Sequelize.INTEGER
+        },
+        email: {
+          type: Sequelize.STRING(100),
+          allowNull: false,
+          unique: true
+        },
+        password: {
+          type: Sequelize.STRING,
+          allowNull: false
+        },
+        username: {
+          type: Sequelize.STRING(50),
+          unique: true,
+        },
+        firstName: {
+          type: Sequelize.STRING(50)
+        },
+        lastName: {
+          type: Sequelize.STRING(50)
+        },
+        createdAt: {
+          type: Sequelize.DATE,
+          allowNull: false
+        },
+        updatedAt: {
+          type: Sequelize.DATE,
+          allowNull: false
+        }
+      }, { transaction })
+
+      await queryInterface.addIndex('Users', ['email'], { unique: true, transaction })
+      await transaction.commit()
+    } catch (error) {
+      await transaction.rollback()
+      throw error
+    }
+  },
+
+  async down(queryInterface, Sequelize) {
+    /**
+     * Add reverting commands here.
+     *
+     * Example:
+     * await queryInterface.dropTable('users');
+     */
+    await queryInterface.dropTable('Users')
+  }
+};
