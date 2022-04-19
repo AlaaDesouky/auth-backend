@@ -9,7 +9,7 @@ const { User, RefreshToken } = models
 
 router.post('/token', requiresAuth('refreshToken'), runAsyncWrapper(async (req, res) => {
   const { jwt } = req.body
-  const user = await User.findOne({ where: { email: jwt.email }, include: RefreshToken })
+  const user = await User.findOne({ where: { email: jwt.jwtPayload.email }, include: RefreshToken })
   const savedToken = user.RefreshToken
 
   if (!savedToken || !savedToken.token) {
