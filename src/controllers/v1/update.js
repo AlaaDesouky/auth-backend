@@ -10,7 +10,7 @@ const { User, Role, sequelize } = models
 router.put('/update', requiresAuth(), runAsyncWrapper(async (req, res) => {
   let { jwt, username, firstName, lastName, roles, password } = req.body
 
-  await sequelize.transaction(async () => {
+  const data = await sequelize.transaction(async () => {
     const user = await User.findOne({ where: { email: jwt.email }, include: Role })
     const dataToUpdate = {}
 
@@ -44,9 +44,10 @@ router.put('/update', requiresAuth(), runAsyncWrapper(async (req, res) => {
     // }
 
     await user.update({ ...dataToUpdate })
+    return { ...dataToUpdate }
   })
 
-  res.status(200).send({ success: true, message: 'Successfully updated user' })
+  res.status(200).send({ success: true, message: 'Successfully updated user', data: { ...data } })
 }))
 
 

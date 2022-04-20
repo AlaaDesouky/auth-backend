@@ -11,7 +11,7 @@ describe('register', () => {
   })
 
   afterAll(async () => {
-    await TestHelpers.startDb()
+    await TestHelpers.stopDb()
   })
 
   beforeEach(async () => {
