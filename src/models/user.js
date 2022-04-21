@@ -2,6 +2,7 @@ import { Model, DataTypes } from 'sequelize'
 import bcrypt from 'bcrypt'
 import environment from '../config/environment'
 import JWTUtils from '../utils/jwt-utils'
+import { user } from 'pg/lib/defaults'
 
 export default (sequelize) => {
   class User extends Model {
@@ -15,10 +16,6 @@ export default (sequelize) => {
       return bcrypt.hash(password, environment.saltRounds)
     }
 
-    static async comparePassword(password, hashedPassword) {
-      return bcrypt.compare(password, hashedPassword)
-    }
-
     static async createNewUser({ email, password, roles }) {
       return sequelize.transaction(async () => {
         const jwtPayload = { email }
@@ -30,7 +27,8 @@ export default (sequelize) => {
           rolesToSave = roles.map((role) => ({ role }))
         }
 
-        await User.create({ email, password, Roles: rolesToSave, RefreshToken: { token: refreshToken } },
+        const hashedPassword = await User.hashPassword(password)
+        await User.create({ email, password: hashedPassword, Roles: rolesToSave, RefreshToken: { token: refreshToken } },
           { include: [User.Roles, User.RefreshToken] })
 
         return { accessToken, refreshToken }
@@ -79,14 +77,54 @@ export default (sequelize) => {
   }, {
     sequelize,
     modelName: 'User',
-    indexes: [{ unique: true, fields: ['email'] }]
+    indexes: [{ unique: true, fields: ['email'] }],
+    defaultScope: {
+      attributes: { exclude: ['password'] }
+    },
+    scopes: {
+      withPassword: {
+        attributes: { include: ['password'] }
+      }
+    }
   })
 
-  // Password Hashing
-  User.beforeSave(async (user, options) => {
-    const hashedPassword = await User.hashPassword(user.password)
-    user.password = hashedPassword
-  })
+  User.prototype.updateUser = async function (data = {}) {
+    return sequelize.transaction(async () => {
+      const { roles, password } = data.userAuthorizationData
+
+      if (roles) {
+        await this.setUserRoles(roles)
+      }
+
+      if (password) {
+        const hashedPassword = await User.hashPassword(password)
+        await this.update({ password: hashedPassword })
+      }
+
+      await this.update({ ...data.userInformationData })
+    })
+  }
+
+  // Update user Roles
+  User.prototype.setUserRoles = async function (roles = []) {
+    let savedRoles = {}
+    let userSavedRoles = await this.getRoles()
+
+    userSavedRoles.map((role) => {
+      !savedRoles[role.role] && (savedRoles[role.role] = true)
+    })
+
+    for (const role of roles) {
+      !savedRoles[role] && await this.createRole({ role })
+    }
+
+    return this.getRoles()
+  }
+
+  // Compare password
+  User.prototype.comparePassword = async function (password) {
+    return bcrypt.compare(password, this.password)
+  }
 
   // Return
   return User

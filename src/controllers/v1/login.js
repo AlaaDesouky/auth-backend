@@ -8,9 +8,9 @@ const { User, RefreshToken } = models
 
 router.post('/login', runAsyncWrapper(async (req, res) => {
   const { email, password } = req.body
-  const user = await User.findOne({ where: { email } })
+  const user = await User.scope('withPassword').findOne({ where: { email } })
 
-  if (!user || !(await User.comparePassword(password, user.password))) {
+  if (!user || !(await user.comparePassword(password))) {
     return res.status(401).send({ success: false, message: 'Invalid credentials' })
   }
 

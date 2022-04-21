@@ -2,52 +2,38 @@ import { Router } from 'express'
 import models from '../../models'
 import runAsyncWrapper from '../../utils/runAsyncWrapper'
 import requiresAuth from '../../middleware/requiresAuth'
-import JWTUtils from '../../utils/jwt-utils'
 
 const router = Router()
-const { User, Role, sequelize } = models
+const { User } = models
 
 router.put('/update', requiresAuth(), runAsyncWrapper(async (req, res) => {
   let { jwt, username, firstName, lastName, roles, password } = req.body
 
-  const data = await sequelize.transaction(async () => {
-    const user = await User.findOne({ where: { email: jwt.email }, include: Role })
-    const dataToUpdate = {}
+  const user = await User.scope('withPassword').findOne({ where: { email: jwt.email } })
+  const dataToUpdate = { userInformationData: {}, userAuthorizationData: {} }
 
-    if (username && username !== user.username) {
-      dataToUpdate.username = username
-    }
+  if (username && username !== user.username) {
+    dataToUpdate.userInformationData.username = username
+  }
 
-    if (firstName && firstName !== user.firstName) {
-      dataToUpdate.firstName = firstName
-    }
+  if (firstName && firstName !== user.firstName) {
+    dataToUpdate.userInformationData.firstName = firstName
+  }
 
-    if (lastName && lastName !== user.lastName) {
-      dataToUpdate.lastName = lastName
-    }
+  if (lastName && lastName !== user.lastName) {
+    dataToUpdate.userInformationData.lastName = lastName
+  }
 
-    if (roles && Array.isArray(roles)) {
-      let savedRoles = {}
-      let userSavedRoles = await user.getRoles()
-      userSavedRoles.map((role) => {
-        !savedRoles[role.role] && (savedRoles[role.role] = true)
-      })
+  if (roles && Array.isArray(roles)) {
+    dataToUpdate.userAuthorizationData.roles = roles
+  }
 
-      for (const role of roles) {
-        !savedRoles[role] && await user.createRole({ role })
-      }
-    }
+  if (password && !(await user.comparePassword(password))) {
+    dataToUpdate.userAuthorizationData.password = password
+  }
 
-    // if(email){
-    //   const accessToken = JWTUtils.generateAccessToken({email})
-    //   const refreshToken = JWTUtils.generateRefreshToken({email})
-    // }
-
-    await user.update({ ...dataToUpdate })
-    return { ...dataToUpdate }
-  })
-
-  res.status(200).send({ success: true, message: 'Successfully updated user', data: { ...data } })
+  await user.updateUser(dataToUpdate)
+  res.status(200).send({ success: true, message: 'Successfully updated user' })
 }))
 
 

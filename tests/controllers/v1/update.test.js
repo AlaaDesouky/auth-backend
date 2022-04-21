@@ -37,22 +37,25 @@ describe('update', () => {
   it('should update user data successfully', async () => {
     const accessToken = newUserResponse.body.data.accessToken
     const { User } = models
-    const user = await User.findOne({ where: { email: "test@example.com" } })
-    const { firstName, lastName, username } = user
+    const user = await User.scope('withPassword').findOne({ where: { email: "test@example.com" } })
     const response = await request(app)
       .put('/v1/update')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         firstName: 'testFirstName',
         lastName: 'testLastName',
-        username: 'testUsername'
+        username: 'testUsername',
+        password: 'Test12345'
       })
       .expect(200)
     expect(response.body.success).toEqual(true)
     expect(response.body.message).toEqual('Successfully updated user')
-    expect(response.body.data.firstName).not.toEqual(firstName)
-    expect(response.body.data.lastName).not.toEqual(lastName)
-    expect(response.body.data.username).not.toEqual(username)
+
+    const updatedUser = await User.scope('withPassword').findOne({ where: { email: 'test@example.com' } })
+    expect(updatedUser.firstName).not.toEqual(user.firstName)
+    expect(updatedUser.lastName).not.toEqual(user.lastName)
+    expect(updatedUser.username).not.toEqual(user.username)
+    expect(updatedUser.password).not.toEqual(user.password)
   })
 
   it('should update user roles successfully', async () => {

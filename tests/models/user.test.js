@@ -3,12 +3,18 @@ import models from '../../src/models'
 import { it, expect, beforeEach } from '@jest/globals'
 
 describe('User', () => {
+  let newUserResponse;
   beforeAll(async () => {
     await TestHelpers.startDb()
   })
 
   afterAll(async () => {
     await TestHelpers.startDb()
+  })
+
+  beforeEach(async () => {
+    await TestHelpers.syncDb()
+    newUserResponse = await TestHelpers.registerNewUser({ email: 'test@example.com', password: 'Test1234#' })
   })
 
   describe('static methods', () => {
@@ -23,22 +29,23 @@ describe('User', () => {
       })
     })
 
-    // Compare password
-    describe('comparePasswords', () => {
-      it('should return true if the hashed password is the same as the original password', async () => {
-        const { User } = models
-        const password = 'Test1234#'
-        const hashedPassword = await User.hashPassword(password)
-        const arePasswordsEqual = await User.comparePassword(password, hashedPassword)
-        expect(arePasswordsEqual).toBe(true)
-      })
 
-      it('should return false if the hashed password is not the same as the original password', async () => {
-        const { User } = models
-        const password = 'Test1234#'
-        const hashedPassword = await User.hashPassword(password)
-        const arePasswordsEqual = await User.comparePassword('Test12342', hashedPassword)
-        expect(arePasswordsEqual).toBe(false)
+    describe('instance methods', () => {
+      // Compare password
+      describe('comparePasswords', () => {
+        it('should return true if the hashed password is the same as the original password', async () => {
+          const { User } = models
+          const user = await User.scope('withPassword').findOne({ where: { email: 'test@example.com' } })
+          const arePasswordsEqual = await user.comparePassword("Test1234#")
+          expect(arePasswordsEqual).toBe(true)
+        })
+
+        it('should return false if the hashed password is not the same as the original password', async () => {
+          const { User } = models
+          const user = await User.scope('withPassword').findOne({ where: { email: 'test@example.com' } })
+          const arePasswordsEqual = await user.comparePassword('Test12342')
+          expect(arePasswordsEqual).toBe(false)
+        })
       })
     })
 
