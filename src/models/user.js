@@ -2,7 +2,6 @@ import { Model, DataTypes } from 'sequelize'
 import bcrypt from 'bcrypt'
 import environment from '../config/environment'
 import JWTUtils from '../utils/jwt-utils'
-import { user } from 'pg/lib/defaults'
 
 export default (sequelize) => {
   class User extends Model {
