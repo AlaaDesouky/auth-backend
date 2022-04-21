@@ -1,6 +1,6 @@
 # Auth-backend-API
 
-##endpoints
+## endpoints
 Function | endpoint | Fields required
 ---------|----------| ---------------
 register | /v1/register | email, password
