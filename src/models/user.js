@@ -121,6 +121,12 @@ export default (sequelize) => {
     return this.getRoles()
   }
 
+  User.prototype.deleteUser = async function () {
+    return sequelize.transaction(async () => {
+      await this.destroy()
+    })
+  }
+
   // Compare password
   User.prototype.comparePassword = async function (password) {
     return bcrypt.compare(password, this.password)
